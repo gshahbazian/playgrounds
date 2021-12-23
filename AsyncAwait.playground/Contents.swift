@@ -1,13 +1,22 @@
 import UIKit
+import Dispatch
 
-actor TestActor {
+@MainActor
+class TestActor {
+    let queue = TaskQueue(concurrency: 1)
+
     func doSleep() async throws {
-        Thread.isMainThread
+        try await queue.enqueue {
+            print("doSleep enq", Thread.isMainThread)
 
-        try await Task.sleep(nanoseconds: 3_000_000_000)
+            print("STARTING A SLEEP", Date())
 
-        Task.isCancelled
-        Thread.isMainThread
+            try await Task.sleep(nanoseconds: 3_000_000_000)
+            print("FINISHED A SLEEP", Date())
+
+            Task.isCancelled
+            Thread.isMainThread
+        }
     }
 }
 
@@ -23,17 +32,30 @@ class MainClass {
     let act = TestActor()
 
     func run1() async {
-        let subtask = Task {
+        let t1 = Task {
+            print("START TASK 1", Date())
             Thread.isMainThread
-
-            try await act.doSleep()
-
-            Thread.isMainThread
-            Task.isCancelled
+            try await self.act.doSleep()
+            print("FINISHED TASK 1")
         }
 
-        await subtask.result
-        Task.isCancelled
+        Task.detached {
+            try await Task.sleep(nanoseconds: 1_000_000_000)
+            print("canceling task 1", Date())
+            t1.cancel()
+        }
+
+        Task.detached {
+            print("START TASK 2", Date())
+            try await self.act.doSleep()
+            print("FINISHED TASK 2", Date())
+        }
+
+        Task.detached {
+            print("START TASK 3", Date())
+            try await self.act.doSleep()
+            print("FINISHED TASK 3", Date())
+        }
     }
 
     func run2() async {
@@ -75,5 +97,5 @@ class MainClass {
 
 let playgroundTask = Task {
     let mc = await MainClass()
-    await mc.run2()
+    await mc.run1()
 }
