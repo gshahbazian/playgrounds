@@ -10,4 +10,7 @@
    <FileRef
       location = "container:Empty.playground">
    </FileRef>
+   <FileRef
+      location = "group:Asynchrone">
+   </FileRef>
 </Workspace>

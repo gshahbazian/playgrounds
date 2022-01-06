@@ -1,17 +1,21 @@
 import Foundation
+import Asynchrone
 
 @propertyWrapper
-public class AsyncProperty<Value> {
-    public let stream: AsyncStream<Value>
+public class AsyncProperty<Element> {
+    public let sequence: AnyAsyncSequenceable<Element>
+    private let continuation: AsyncStream<Element>.Continuation
 
-    private let continuation: AsyncStream<Value>.Continuation
-
-    public init(_ initialValue: Value) {
+    public init(_ initialValue: Element) {
         value = initialValue
-        (stream, continuation) = AsyncStream.pipe()
+        let (stream, continuation) = AsyncStream<Element>.pipe()
+        self.continuation = continuation
+
+        let shared = stream.shared()
+        sequence = shared.eraseToAnyAsyncSequenceable()
     }
 
-    public convenience init(wrappedValue: Value) {
+    public convenience init(wrappedValue: Element) {
         self.init(wrappedValue)
     }
 
@@ -19,14 +23,14 @@ public class AsyncProperty<Value> {
         continuation.finish()
     }
 
-    public var value: Value {
+    public var value: Element {
         didSet {
             continuation.yield(value)
         }
     }
 
     @inlinable
-    public var wrappedValue: Value {
+    public var wrappedValue: Element {
         get { value }
         set { value = newValue }
     }

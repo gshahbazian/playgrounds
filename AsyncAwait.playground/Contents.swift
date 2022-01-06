@@ -1,5 +1,6 @@
 import UIKit
 import Dispatch
+import Package
 
 @MainActor
 class MainClass {
@@ -14,11 +15,17 @@ class MainClass {
             }
         }
 
-        for await val in _hey.stream {
-            print("VALUE: ", val)
+        Task {
+            for await val in _hey.sequence {
+                print("VALUE 1: ", val)
+            }
         }
 
-        print("DONE")
+        Task {
+            for await val in _hey.sequence {
+                print("VALUE 2: ", val)
+            }
+        }
     }
 }
 
