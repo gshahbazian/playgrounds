@@ -38,9 +38,11 @@ public actor CoalescingTask<Success> {
         return try await withTaskCancellationHandler {
             print("CT launching task")
 
-            let result = try await task!.value
-            if !Task.isCancelled { finish() }
-            return result
+            defer {
+                if !Task.isCancelled { finish() }
+            }
+
+            return try await task!.value
         } onCancel: {
             // Is it possible for run to happen between here and self.cancel()?
 
