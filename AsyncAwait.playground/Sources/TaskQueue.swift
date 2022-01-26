@@ -3,16 +3,22 @@ import Foundation
 public actor TaskQueue {
     private let concurrency: Int
     private var running: Int = 0
-    private var queue = [CheckedContinuation<Void, Never>]()
+    private var queue = [CheckedContinuation<Void, Error>]()
 
     public init(concurrency: Int) {
         self.concurrency = concurrency
     }
 
+    deinit {
+        for continuation in queue {
+            continuation.resume(throwing: CancellationError())
+        }
+    }
+
     public func enqueue<T>(operation: @escaping @Sendable () async throws -> T) async throws -> T {
         try Task.checkCancellation()
 
-        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             queue.append(continuation)
             tryRunEnqueued()
         }
