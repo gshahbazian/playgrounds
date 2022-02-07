@@ -1,6 +1,6 @@
 import Foundation
 
-public actor CoalescingTask<Success> {
+public actor CoalescingTask<Success: Sendable> {
     private let operationBlock: (@Sendable () async throws -> Success)
     private var task: Task<Success, Error>? = nil
     private var listeners: Int = 0
